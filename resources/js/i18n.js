@@ -1,0 +1,65 @@
+import { createI18n } from 'vue-i18n'
+
+const messages = {
+  pt: {
+    title: 'Agenda de Contatos',
+    panel: 'Painel',
+    contacts: 'Contatos',
+    new_contact: 'Novo Contato',
+    edit_contact: 'Editar Contato',
+    name: 'Nome',
+    email: 'E-mail',
+    phone: 'Telefone',
+    cep: 'CEP',
+    state: 'Estado',
+    city: 'Cidade',
+    neighborhood: 'Bairro',
+    address: 'Endereço',
+    number: 'Número',
+    loading: 'Carregando...',
+    error_loading: 'Erro ao carregar contatos.',
+    save: 'Salvar',
+    cancel: 'Cancelar',
+    remove: 'Remover',
+    edit: 'Editar',
+    page: 'Página',
+    of: 'de',
+    previous: 'Anterior',
+    next: 'Próxima',
+    actions: 'Ações'
+  },
+  en: {
+    title: 'Contact List',
+    panel: 'Panel',
+    contacts: 'Contacts',
+    new_contact: 'New Contact',
+    edit: 'Edit',
+    name: 'Name',
+    email: 'Email',
+    phone: 'Phone',
+    cep: 'ZIP Code',
+    state: 'State',
+    city: 'City',
+    neighborhood: 'Neighborhood',
+    address: 'Address',
+    number: 'Number',
+    loading: 'Loading...',
+    error_loading: 'Error loading contacts.',
+    save: 'Save',
+    cancel: 'Cancel',
+    remove: 'Remove',
+    edit: 'Edit',
+    page: 'Page',
+    of: 'of',
+    previous: 'Previous',
+    next: 'Next',
+    actions: 'Actions'
+  }
+}
+
+export default createI18n({
+  legacy: false,
+  locale: 'pt',
+  fallbackLocale: 'en',
+  messages,
+})

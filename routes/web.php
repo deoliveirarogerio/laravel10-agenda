@@ -2,19 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
-*/
+// Painel Admin (SPA) — deve vir ANTES de outras rotas que possam capturar /admin
+Route::view('/admin/{any?}', 'admin')
+    ->where('any', '.*')
+    ->name('admin.spa');
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::view('/{any}', 'welcome')->where('any', '.*');
