@@ -25,7 +25,9 @@ class ContactController extends Controller
 
     public function store(ContactRequest $request)
     {
+        // Cria e dispara o job no próprio Service (com recipient correto)
         $contact = $this->service->create($request->validated());
+
         return response()->json($contact, 201);
     }
 
