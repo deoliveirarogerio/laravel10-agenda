@@ -1,6 +1,6 @@
 <script setup>
-import { onMounted, computed } from 'vue'
-import { useContactsStore } from '../../js/contacts_store'
+import { onMounted, computed } from 'vue';
+import { useContactsStore } from '../../js/contacts_store';
 import { useI18n } from 'vue-i18n';
 
 const store = useContactsStore()
@@ -17,7 +17,6 @@ function removerContato(id) {
   }
 }
 
-// Selecionar todos os itens da página com segurança
 const allChecked = computed({
   get: () => Array.isArray(store.items) && store.items.length > 0 && store.items.every(i => i && typeof i.id !== 'undefined' && store.selected.has(i.id)),
   set: (val) => {
@@ -50,7 +49,7 @@ const allChecked = computed({
         :disabled="store.selected.size === 0"
         @click="store.exportCsv()"
       >
-        Exportar CSV ({{ store.selected.size }})
+        {{ t('export') }} CSV ({{ store.selected.size }})
       </button>
     </div>
 
@@ -60,7 +59,6 @@ const allChecked = computed({
       <table class="min-w-full border border-gray-300 dark:border-gray-700 rounded shadow-sm bg-white dark:bg-gray-900">
         <thead>
            <tr class="bg-gray-100 dark:bg-gray-800">
-            <!-- Coluna de seleção (header) -->
             <th class="px-2 py-2 border-b border-gray-300 dark:border-gray-700 text-left w-10">
               <input
                 type="checkbox"
@@ -86,7 +84,6 @@ const allChecked = computed({
             :key="contact?.id ?? idx"
             class="hover:bg-gray-50 dark:hover:bg-gray-800"
           >
-            <!-- Checkbox da linha -->
             <td class="px-2 py-2 border-b border-gray-200 dark:border-gray-700">
               <input
                 v-if="contact && typeof contact.id !== 'undefined'"
@@ -144,17 +141,17 @@ const allChecked = computed({
         v-if="(store.pagination?.total ?? 0) > (store.items?.length ?? 0)"
         class="mt-4 flex items-center text-gray-700 dark:text-gray-300"
       >
-        Página {{ store.pagination?.current_page ?? 1 }} de {{ store.pagination?.last_page ?? 1 }}
+        {{ t('page')}} {{ store.pagination?.current_page ?? 1 }} {{ t('of')}} {{ store.pagination?.last_page ?? 1 }}
         <button
           v-if="(store.pagination?.current_page ?? 1) > 1"
           @click="store.fetch(store.pagination.current_page - 1)"
           class="ml-4 px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600"
-        >Anterior</button>
+        >{{ t('previous') }}</button>
         <button
           v-if="(store.pagination?.current_page ?? 1) < (store.pagination?.last_page ?? 1)"
           @click="store.fetch(store.pagination.current_page + 1)"
           class="ml-2 px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600"
-        >Próxima</button>
+        >{{ t('next') }}</button>
       </div>
     </div>
   </div>

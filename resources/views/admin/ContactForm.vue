@@ -1,117 +1,145 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useContactsStore } from '../../js/contacts_store'
+import { reactive, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useContactsStore } from '../../js/contacts_store';
 
-const store = useContactsStore()
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
+const store = useContactsStore();
 
-const isEdit = !!route.params.id
-const form = ref({
-  contact_name: '',
-  contact_email: '',
-  contact_phone: '',
+const id = route.params.id ? Number(route.params.id) : null;
+
+const form = reactive({
   cep: '',
   state: '',
   city: '',
   neighborhood: '',
   address: '',
   number: '',
-})
+  contact_name: '',
+  contact_email: '',
+  contact_phone: '',
+});
 
-const loading = ref(false)
-const error = ref(null)
+const errors = reactive({});
+
+// Lista de UFs (combobox Estado)
+const states = [
+  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA',
+  'MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN',
+  'RS','RO','RR','SC','SP','SE','TO'
+];
 
 onMounted(async () => {
-  if (isEdit) {
-    loading.value = true
-    try {
-      const data = await store.find(route.params.id)
-      Object.assign(form.value, data)
-    } catch (e) {
-      error.value = 'Erro ao carregar contato.'
-    } finally {
-      loading.value = false
-    }
+  if (id) {
+    const data = await store.find(id);
+    Object.assign(form, data || {});
   }
-})
+});
+
+// ViaCEP no blur do CEP
+async function onCepBlur() {
+  const data = await store.fetchViaCep(form.cep || '');
+  if (!data) return;
+  // Mapear campos do store para o seu form
+  form.cep = data.zip_code || form.cep;
+  form.state = data.state || form.state;
+  form.city = data.city || form.city;
+  form.neighborhood = data.district || form.neighborhood;
+  form.address = data.address || form.address;
+}
 
 async function submit() {
-  loading.value = true
-  error.value = null
+  Object.keys(errors).forEach(k => delete errors[k]);
   try {
-    if (isEdit) {
-      await store.update(route.params.id, form.value)
-    } else {
-      await store.create(form.value)
-    }
-    router.push({ name: 'admin.contacts' })
+    if (id) await store.update(id, form);
+    else await store.create(form);
+    router.push({ name: 'admin.contacts' });
   } catch (e) {
-    error.value = 'Erro ao salvar contato.'
-  } finally {
-    loading.value = false
+    if (e?.response?.status === 422) Object.assign(errors, e.response.data.errors || {});
   }
 }
 </script>
 
 <template>
-  <div class="max-w-xl mx-auto bg-white dark:bg-gray-900 p-6 rounded shadow">
-    <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-      {{ isEdit ? 'Editar Contato' : 'Novo Contato' }}
-    </h2>
-    <form @submit.prevent="submit" class="space-y-4">
-      <div v-if="error" class="text-red-600 dark:text-red-400">{{ error }}</div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-gray-700 dark:text-gray-300 mb-1">Nome</label>
-          <input v-model="form.contact_name" required class="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+  <div class="max-w-3xl">
+    <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 dark:bg-gray-800 dark:border-gray-700">
+      <h2 class="text-lg font-semibold mb-4">{{ id ? 'Editar contato' : 'Novo contato' }}</h2>
+
+      <form @submit.prevent="submit" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-sm mb-1">CEP</label>
+            <input
+              v-model="form.cep"
+              @blur="onCepBlur"
+              placeholder="00000-000"
+              class="w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
+            />
+            <p v-if="errors.cep" class="text-sm text-red-600 mt-1">{{ errors.cep[0] }}</p>
+          </div>
+
+          <div>
+            <label class="block text-sm mb-1">Estado</label>
+            <select
+              v-model="form.state"
+              class="w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
+            >
+              <option disabled value="">Selecione</option>
+              <option v-for="uf in states" :key="uf" :value="uf">{{ uf }}</option>
+            </select>
+            <p v-if="errors.state" class="text-sm text-red-600 mt-1">{{ errors.state[0] }}</p>
+          </div>
+
+          <div>
+            <label class="block text-sm mb-1">Cidade</label>
+            <input v-model="form.city" class="w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600" />
+            <p v-if="errors.city" class="text-sm text-red-600 mt-1">{{ errors.city[0] }}</p>
+          </div>
         </div>
-        <div>
-          <label class="block text-gray-700 dark:text-gray-300 mb-1">E-mail</label>
-          <input v-model="form.contact_email" type="email" required class="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-sm mb-1">Bairro</label>
+            <input v-model="form.neighborhood" class="w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600" />
+            <p v-if="errors.neighborhood" class="text-sm text-red-600 mt-1">{{ errors.neighborhood[0] }}</p>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm mb-1">Endereço</label>
+            <input v-model="form.address" class="w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600" />
+            <p v-if="errors.address" class="text-sm text-red-600 mt-1">{{ errors.address[0] }}</p>
+          </div>
         </div>
-        <div>
-          <label class="block text-gray-700 dark:text-gray-300 mb-1">Telefone</label>
-          <input v-model="form.contact_phone" class="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-sm mb-1">Número</label>
+            <input v-model="form.number" class="w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600" />
+            <p v-if="errors.number" class="text-sm text-red-600 mt-1">{{ errors.number[0] }}</p>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Nome</label>
+            <input v-model="form.contact_name" class="w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600" />
+            <p v-if="errors.contact_name" class="text-sm text-red-600 mt-1">{{ errors.contact_name[0] }}</p>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">E-mail</label>
+            <input type="email" v-model="form.contact_email" class="w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600" />
+            <p v-if="errors.contact_email" class="text-sm text-red-600 mt-1">{{ errors.contact_email[0] }}</p>
+          </div>
         </div>
+
         <div>
-          <label class="block text-gray-700 dark:text-gray-300 mb-1">CEP</label>
-          <input v-model="form.cep" class="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+          <label class="block text-sm mb-1">Telefone</label>
+          <input v-model="form.contact_phone" class="w-full rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600" />
+          <p v-if="errors.contact_phone" class="text-sm text-red-600 mt-1">{{ errors.contact_phone[0] }}</p>
         </div>
-        <div>
-          <label class="block text-gray-700 dark:text-gray-300 mb-1">Estado</label>
-          <input v-model="form.state" class="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+
+        <div class="flex justify-end gap-2">
+          <router-link :to="{ name: 'admin.contacts' }" class="px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700">Cancelar</router-link>
+          <button class="px-3 py-2 rounded-md bg-indigo-600 text-white shadow-sm hover:bg-indigo-500">Salvar</button>
         </div>
-        <div>
-          <label class="block text-gray-700 dark:text-gray-300 mb-1">Cidade</label>
-          <input v-model="form.city" class="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
-        </div>
-        <div>
-          <label class="block text-gray-700 dark:text-gray-300 mb-1">Bairro</label>
-          <input v-model="form.neighborhood" class="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
-        </div>
-        <div>
-          <label class="block text-gray-700 dark:text-gray-300 mb-1">Endereço</label>
-          <input v-model="form.address" class="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
-        </div>
-        <div>
-          <label class="block text-gray-700 dark:text-gray-300 mb-1">Número</label>
-          <input v-model="form.number" class="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
-        </div>
-      </div>
-      <div class="flex justify-end gap-2 mt-4">
-        <button type="button" @click="router.back()" class="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600">
-          Cancelar
-        </button>
-        <button type="submit" :disabled="loading" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
-          {{ loading ? 'Salvando...' : 'Salvar' }}
-        </button>
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
 </template>
-
-<style scoped>
-
-</style>
